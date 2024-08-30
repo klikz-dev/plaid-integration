@@ -1,0 +1,71 @@
+<!-- templates/plaid_link.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Plaid Integration</title>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  </head>
+  <body>
+    <button id="link-button">Link Account</button>
+
+    <script>
+      document
+        .getElementById('link-button')
+        .addEventListener('click', function () {
+          fetch('http://127.0.0.1:8000/plaid/create-link-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization:
+                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI0MjI1ODQyLCJpYXQiOjE3MjQyMjIyNDIsImp0aSI6IjYzMmFjYmQxODk1NDRiOGFiZDNiNTFkYjRlNTYxMTA5IiwidXNlcl9pZCI6MX0.HTHxAPJojnqCrajJ9VwGmmIaqUXWF0bg4vtMGz_JFN0',
+            },
+          })
+            .then(function (response) {
+              return response.json()
+            })
+            .then(function (data) {
+              var handler = Plaid.create({
+                token: data.link_token,
+                onSuccess: function (public_token, metadata) {
+                  console.log('Public Token: ', public_token)
+                  console.log('Metadata: ', metadata)
+
+                  fetch('http://127.0.0.1:8000/plaid/exchange-access-token', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization:
+                        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI0MjI1ODQyLCJpYXQiOjE3MjQyMjIyNDIsImp0aSI6IjYzMmFjYmQxODk1NDRiOGFiZDNiNTFkYjRlNTYxMTA5IiwidXNlcl9pZCI6MX0.HTHxAPJojnqCrajJ9VwGmmIaqUXWF0bg4vtMGz_JFN0',
+                    },
+                    body: JSON.stringify({ public_token: public_token }),
+                  })
+                    .then(function (response) {
+                      return response.json()
+                    })
+                    .then(function (data) {
+                      console.log('Success Response: ', data)
+                    })
+                    .catch(function (error) {
+                      console.error('Error:', error)
+                    })
+                },
+                onExit: function (err, metadata) {
+                  if (err != null) {
+                    console.error('Error: ', err)
+                    console.log('Metadata: ', metadata)
+                  } else {
+                    console.log('User exited the Link flow.')
+                    console.log('Metadata: ', metadata)
+                  }
+                },
+              })
+              handler.open()
+            })
+            .catch(function (error) {
+              console.error('Error:', error)
+            })
+        })
+    </script>
+  </body>
+</html>
